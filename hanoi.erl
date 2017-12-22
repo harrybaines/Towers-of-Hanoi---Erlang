@@ -176,50 +176,42 @@ solve(Towers) ->
     StackContainingOne = get_stack_containing(1, Towers),
     io:format("~nLargest stack containing one: ~p~n", [element(2, StackContainingOne)]),
 
-    %% Move stack onto next largest disk - standard algorithm
-    LargestInContig = lists:max(element(2, StackContainingOne)),
-    io:format("~nLargest disk in contig: ~p~n", [LargestInContig]),
-    DiskToFind = LargestInContig + 1,
-    io:format("Disk to move to: ~p~n", [DiskToFind]),
-    
-    %% Get tower names of source (contig containing 1) and dest (4)
-    StackContainingDest = get_stack_containing(DiskToFind, Towers),
-    SourceName = element(1, StackContainingOne),
-    DestName = element(1, StackContainingDest),
-    ViaName = list_to_atom(get_via(SourceName, DestName, Towers)),
-
-    io:format("~nSource for contig stack: ~p~n", [SourceName]),
-    io:format("Destination for contig stack: ~p~n", [DestName]),
-    io:format("Via for contig stack: ~p~n", [ViaName]),
-
-    NumDisks = length(element(2, StackContainingOne)),
-    OneMove = move(SourceName, DestName, ViaName, NumDisks, Towers),
-
-
-    NumTowers = get_num_empty_towers(OneMove),
+    InitEmpty = get_num_empty_towers(Towers),
     if
-        %% Partially finished (2 towers empty) - find tower, move all to tower3
-        NumTowers == 2 ->
-
-            io:format("Partially finished!!~n"),
-            FinalSource = get_final_source(OneMove),
+        InitEmpty == 2 ->
+            FinalSource = get_final_source(Towers),
             FinalDisks = element(2, FinalSource),
             NumDisks2 = length(FinalDisks),
-            FinalVia = list_to_atom(get_via(element(1, FinalSource), tower3, OneMove)),
-
-            io:format("Num Disks: ~p~n", [NumDisks2]),
+            FinalVia = list_to_atom(get_via(element(1, FinalSource), tower3, Towers)),
 
             FinalSourceName = atom_to_list(element(1, FinalSource)),
 
             if
                 FinalSourceName == "tower3" ->
-                    display_towers(OneMove),
-                    OneMove;
+                    display_towers(Towers),
+                    Towers;
                 true ->
-                    move(element(1, FinalSource), tower3, FinalVia, NumDisks2, OneMove)
+                    move(element(1, FinalSource), tower3, FinalVia, NumDisks2, Towers)
             end;
 
         true ->
-            io:format("Not partially finished!~n"),
+            %% Move stack onto next largest disk - standard algorithm
+            LargestInContig = lists:max(element(2, StackContainingOne)),
+            io:format("~nLargest disk in contig: ~p~n", [LargestInContig]),
+            DiskToFind = LargestInContig + 1,
+            io:format("Disk to move to: ~p~n", [DiskToFind]),
+            
+            %% Get tower names of source (contig containing 1) and dest (4)
+            StackContainingDest = get_stack_containing(DiskToFind, Towers),
+            SourceName = element(1, StackContainingOne),
+            DestName = element(1, StackContainingDest),
+            ViaName = list_to_atom(get_via(SourceName, DestName, Towers)),
+
+            io:format("~nSource for contig stack: ~p~n", [SourceName]),
+            io:format("Destination for contig stack: ~p~n", [DestName]),
+            io:format("Via for contig stack: ~p~n", [ViaName]),
+
+            NumDisks = length(element(2, StackContainingOne)),
+            OneMove = move(SourceName, DestName, ViaName, NumDisks, Towers),
             solve(OneMove)
     end.
