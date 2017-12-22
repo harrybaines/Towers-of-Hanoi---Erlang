@@ -19,19 +19,23 @@ Example in the Erlang shell:
 
 > hanoi:solve(T).
 
+Or simply:
 
-Further tower list examples:
+> hanoi:solve([{tower2, [1,7]}, {tower3, [2,4,6]}, {tower1, [3,5]}]). 
 
-- T1 = [{tower1, [3,4]}, {tower2, [2]}, {tower3, [1]}].
 
-- T2 = [{tower1, [1,5,9]}, {tower2, [2,3,4]}, {tower3, [6,7,8,10]}].
+Further tower list examples (can copy straight into shell):
 
-- T3 = [{tower1, [6,9]}, {tower2, [1,8]}, {tower3, [2,3,4,5,7,10]}].
+> hanoi:solve([{tower1, [3,4]}, {tower2, [2]}, {tower3, [1]}]).
 
-- T4 = [{tower2, [1,7]}, {tower3, [2,4,6]}, {tower1, [3,5]}].
+> hanoi:solve([{tower1, [1,5,9]}, {tower2, [2,3,4]}, {tower3, [6,7,8,10]}]).
 
-- T5 = [{tower1, []}, {tower2, [1,2]}, {tower3,[]}]
+> hanoi:solve([{tower1, [6,9]}, {tower2, [1,8]}, {tower3, [2,3,4,5,7,10]}]).
 
-- T6 = [{tower1, []}, {tower2, [1]}, {tower3, []}].
+> hanoi:solve([{tower2, [1,7]}, {tower3, [2,4,6]}, {tower1, [3,5]}]).
 
-- T7 = [{tower3, [3]}, {tower2, [1,5]}, {tower1, [2,4]}].
+> hanoi:solve([{tower1, []}, {tower2, [1,2]}, {tower3,[]}]).
+
+> hanoi:solve([{tower1, []}, {tower2, [1]}, {tower3, []}]).
+
+> hanoi:solve([{tower3, [3]}, {tower2, [1,5]}, {tower1, [2,4]}]).

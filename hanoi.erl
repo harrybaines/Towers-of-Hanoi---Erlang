@@ -56,28 +56,21 @@ get_contig_stack(Disks, Count) ->
     %% Get top disk (smallest)
     Top = get_top(Disks),
 
-    io:format("Current tower state: ~p~n", [Disks]),
-    io:format("Next disk: ~p~n", [Top]),
-
-    %% Recurse for next disk in list, otherwise return contiguous stack
+    %% Recurse for next disk in list if contiguous, otherwise return contiguous stack
     if
         Count == Top ->
             TowerDisks = lists:droplast(lists:reverse(Disks)),
             get_contig_stack(lists:reverse(TowerDisks), Count + 1);
         true ->
-            io:format("Nope. Not contiguous.~n"),
             ContigStack = lists:seq(1, Count-1),
             ContigStack
     end.
 
-get_top([Head|Tail]) ->
-    case Tail of
-      [] ->
-        Head;
-      _ -> 
-        Head
-    end;
+%% Returns the head of the disk list (top disk)
+get_top([Head|_]) ->
+    Head;
 
+%% Case for attempting to get top disk on empty disk list
 get_top([]) ->
     ok.
 
@@ -92,18 +85,16 @@ get_stack_containing(ToFind, [Tower|Rest]) ->
 
     %% Reverse disks
     TopDisk = get_top(TowerDisks),
-    % TopDisk = lists:last(lists:reverse(TowerDisks)),
 
     %% Check if disk is 1
     if
+        %% Find largest contiguous stack
         TopDisk == ToFind ->
-           %% Found a 1, so find largest contiguous stack
-           io:format("Found!~n"),
            ContigStack = {element(1, Tower), get_contig_stack(TowerDisks, Count)},
            ContigStack;
+
+        %% 1 not found yet - look at other towers to find it
         true ->
-           %% Look at next tower to find a 1 
-           io:format("Not found yet!~n"),
            get_stack_containing(ToFind, Rest)
     end;
 
@@ -111,31 +102,33 @@ get_stack_containing(ToFind, [Tower|Rest]) ->
 get_stack_containing(_, []) ->
     ok.
 
+%% Obtains the atom for the via tower name
 get_via(SourceName, DestName, Towers) ->
 
+    %% Obtain current tower atom
     [CurTower|Rest] = Towers,
+    CurTowerName = element(1, CurTower),
 
-    CurTowerStr = atom_to_list(element(1, CurTower)),
-    SourceStr = atom_to_list(SourceName),
-    DestStr = atom_to_list(DestName),
-    
+    %% Check if tower is not source and not destination
     if
-        SourceStr /= CurTowerStr ->
-
+        SourceName /= CurTowerName ->
             if
-                DestStr /= CurTowerStr ->
-                    ViaName = CurTowerStr,
+                %% Found via name
+                DestName /= CurTowerName ->
+                    ViaName = CurTowerName,
                     ViaName;
 
+                %% Haven't found yet, recursively search
                 true ->
                     get_via(SourceName, DestName, Rest)
             end;
-            
+
+        %% Haven't found yet, recursively search    
         true ->
             get_via(SourceName, DestName, Rest)
     end.
 
-
+%% Returns 1 if the disk list is empty, 0 otherwise
 is_empty(Disks) ->
     if
         length(Disks) == 0 ->
@@ -144,18 +137,18 @@ is_empty(Disks) ->
             0
     end.
 
+%% Returns the total number of empty towers
 get_num_empty_towers(Towers) ->
-    [Head1|Tail1] = Towers,
-    Tower1C = 0 + is_empty(element(2, Head1)),
-    [Head2|Tail2] = Tail1,
-    Tower2C = 0 + is_empty(element(2, Head2)),
-    [Head3|Tail3] = Tail2,
-    Tower3C = 0 + is_empty(element(2, Head3)),
+    [T1H|T1T] = Towers,
+    Tower1C = is_empty(element(2, T1H)),
+    [T2H|T2T] = T1T,
+    Tower2C = is_empty(element(2, T2H)),
+    [T3H|_] = T2T,
+    Tower3C = is_empty(element(2, T3H)),
     Count = Tower1C + Tower2C + Tower3C,
-    io:format("Count = ~p~n", [Count]),
     Count.
     
-
+%% Returns the atom name of the final source tower (then moved to tower3)
 get_final_source(Towers) ->
     [Head|Tail] = Towers,
     DisksLen = length(element(2, Head)),
@@ -166,52 +159,55 @@ get_final_source(Towers) ->
             Head
     end.
 
-%% Solve function - solves the towers from start state
-%% Begins recursive calls to move all disks from tower1 to tower3
+%% Solve function: solves the towers from start state and begins recursive calls to move all disks
 solve(Towers) ->
 
     display_towers(Towers),
 
     %% Find largest contiguous stack containing 1
     StackContainingOne = get_stack_containing(1, Towers),
-    io:format("~nLargest stack containing one: ~p~n", [element(2, StackContainingOne)]),
 
-    InitEmpty = get_num_empty_towers(Towers),
+    %% Check if 2 towers are empty in initial game state
+    EmptyTowers = get_num_empty_towers(Towers),
     if
-        InitEmpty == 2 ->
+        %% Can move disks to final destination here
+        EmptyTowers == 2 ->
+
+            %% Obtain details to call move function or simply display finished game
             FinalSource = get_final_source(Towers),
             FinalDisks = element(2, FinalSource),
             NumDisks2 = length(FinalDisks),
-            FinalVia = list_to_atom(get_via(element(1, FinalSource), tower3, Towers)),
+            FinalVia = get_via(element(1, FinalSource), tower3, Towers),
 
+            %% Check if game is finished - just display
             FinalSourceName = atom_to_list(element(1, FinalSource)),
-
             if
                 FinalSourceName == "tower3" ->
                     display_towers(Towers),
                     Towers;
+
+                %% Otherwise, recursively move disks to tower3
                 true ->
                     move(element(1, FinalSource), tower3, FinalVia, NumDisks2, Towers)
             end;
 
+        %% Recursively solve the game until 2 towers are empty
         true ->
+
             %% Move stack onto next largest disk - standard algorithm
             LargestInContig = lists:max(element(2, StackContainingOne)),
-            io:format("~nLargest disk in contig: ~p~n", [LargestInContig]),
-            DiskToFind = LargestInContig + 1,
-            io:format("Disk to move to: ~p~n", [DiskToFind]),
             
-            %% Get tower names of source (contig containing 1) and dest (4)
+            %% Find next sequential disk number to move contig stack to
+            DiskToFind = LargestInContig + 1,
+            
+            %% Get tower names of source (contig containing 1), dest, via and NumDisks
             StackContainingDest = get_stack_containing(DiskToFind, Towers),
             SourceName = element(1, StackContainingOne),
             DestName = element(1, StackContainingDest),
-            ViaName = list_to_atom(get_via(SourceName, DestName, Towers)),
-
-            io:format("~nSource for contig stack: ~p~n", [SourceName]),
-            io:format("Destination for contig stack: ~p~n", [DestName]),
-            io:format("Via for contig stack: ~p~n", [ViaName]),
-
+            ViaName = get_via(SourceName, DestName, Towers),
             NumDisks = length(element(2, StackContainingOne)),
-            OneMove = move(SourceName, DestName, ViaName, NumDisks, Towers),
-            solve(OneMove)
+
+            %% Make a move and recursively solve again
+            Moved = move(SourceName, DestName, ViaName, NumDisks, Towers),
+            solve(Moved)
     end.
